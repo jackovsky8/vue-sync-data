@@ -4,19 +4,19 @@
 ## install
 
 ```javascript
-npm install --save vue-sync-query
+npm install --save vue-data-sync
 ```
 
 ```javascript
 import Vue from 'vue'
-import VueSyncQuery from 'vue-sync-query'
+import VueSyncQuery from 'vue-data-sync'
 Vue.use(VueSyncQuery)
 
 export default {
     data() {
         myNameString: 'This is my String'
     },
-    syncQuery: {
+    dataSync: {
         myNameString: {
             type: String,
             name: 'name'
