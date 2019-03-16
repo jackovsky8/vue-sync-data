@@ -29,30 +29,28 @@ Now the query is kept in Sync with the Value
 
 Options for the watchers
 
+```javascript
 type: 
 - required
 - String | Number | Boolean | Array | Object
 
 name: 
 - required
-- typeof String
+- String
 
 nullable:
-- typeof Boolean
+- Boolean
 
 validate: 
-- typeof === 'function'
-eg. function(value) {
-    if(!value) return false
-    return true
-}
+- Function // You receive newValue as first Argument and return Boolean
 
 proto: 
 - Only for type Object
 - typeof Object
-eg. {
+- {
     value: {
         type: Number,
         name: value
     }
 }
+```
