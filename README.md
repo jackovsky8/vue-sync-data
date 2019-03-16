@@ -1,10 +1,13 @@
-vue-sync-query
-Auto Sync Vue Data to Query String
+#vue-sync-query
+###Auto Sync Vue Data to Query String
 
-install
+##install
 
+```javascript
 npm install --save vue-sync-query
+```
 
+```javascript
 import Vue from 'vue'
 import VueSyncQuery from 'vue-sync-query'
 Vue.use(VueSyncQuery)
@@ -20,6 +23,7 @@ export default {
         }
     }
 }
+```
 
 Now the query is kept in Sync with the Value
 
