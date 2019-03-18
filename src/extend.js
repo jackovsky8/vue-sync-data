@@ -1,8 +1,8 @@
 export default function extend(Vue) {
-  if (!Vue.prototype.hasOwnProperty('$syncQuery')) {
-    Object.defineProperty(Vue.prototype, '$syncQuery', {
+  if (!Vue.prototype.hasOwnProperty('$syncData')) {
+    Object.defineProperty(Vue.prototype, '$syncData', {
       get() {
-        return this._syncQuery
+        return this._syncData
       }
     })
   }

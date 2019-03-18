@@ -53,5 +53,6 @@ proto:
 ```javascript
 npm run test // Run Tests
 npm run build // Build the Package
+npm run dev // Build the Package and watch for changes
 npm run lint // Lint the Package
 ```

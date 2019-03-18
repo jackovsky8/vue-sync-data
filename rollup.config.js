@@ -20,9 +20,9 @@ export default [
       babel({
         exclude: 'node_modules/**',
         presets: ['@babel/preset-env'],
-        plugins: ['@babel/plugin-proposal-class-properties']
+        plugins: ['@babel/plugin-proposal-class-properties', 'lodash']
       }),
-      resolve(), // so Rollup can find `lodash`
+      resolve(),
       commonjs(),
       minify({
         comments: false
@@ -38,7 +38,14 @@ export default [
   // `file` and `format` for each target)
   {
     input: 'src/main.js',
-    external: ['lodash-es'],
+    external: [
+      'lodash/set',
+      'lodash/isArray',
+      'lodash/isBoolean',
+      'lodash/isObject',
+      'lodash/isEmpty',
+      'lodash/isString'
+    ],
     output: [
       {
         file: pkg.main,
@@ -56,7 +63,7 @@ export default [
       babel({
         exclude: 'node_modules/**',
         presets: ['@babel/preset-env'],
-        plugins: ['@babel/plugin-proposal-class-properties']
+        plugins: ['@babel/plugin-proposal-class-properties', 'lodash']
       }),
       minify({
         comments: false

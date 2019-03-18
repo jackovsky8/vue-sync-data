@@ -1,29 +1,19 @@
 import { install, Vue } from './install'
+import { _getValidSyncObjects, _validateSyncObject } from './validate'
 import { warn } from './util'
-import { isObject, isEmpty, isArray, isString, isBoolean, set } from 'lodash-es'
+import _ from 'lodash'
 
 class ValueWatchFn {
   _object
-  _expression
   _parent
-  _syncValue
 
-  constructor(object, expression, parent) {
+  constructor(object, parent) {
     this._object = object
-    this._expression = expression
     this._parent = parent
-    this._syncValue = parent._syncValue
   }
 
   watchFn = newValue => {
-    if (newValue === undefined || newValue === null || isEmpty(newValue))
-      this._parent._vm.$delete(
-        this._syncValue.query,
-        this._object.name,
-        newValue
-      )
-    else
-      this._parent._vm.$set(this._syncValue.query, this._object.name, newValue)
+    this._parent._setValueToQuery(newValue, this._object)
   }
 }
 
@@ -51,9 +41,12 @@ class QueryWatchFn {
   }
 }
 
-export const test = 'me'
 export default class VueSyncData {
   static install = install
+
+  // Static Helper Functions
+  static _getValidSyncObjects = _getValidSyncObjects
+  static _validateSyncObject = _validateSyncObject
 
   _vm
   _watchers
@@ -72,74 +65,25 @@ export default class VueSyncData {
 
     // Check if Component has registered watchers
     const options = this._vm.$options
-    options.syncQuery = options.syncQuery || (options.__syncQuery ? {} : null)
+    options.syncData = options.syncData || (options.__syncData ? {} : null)
 
     let objects = {}
 
-    if (options.syncQuery && isObject(options.syncQuery)) {
-      warn(`some Data to Sync given ${vm._uid}`)
-      objects = this._getValidSyncObjects(options.syncQuery)
+    if (options.syncData && _.isObject(options.syncData)) {
+      objects = VueSyncData._getValidSyncObjects(options.syncData)
     }
 
     // Copy the Reference from the vm to this array
-    this._syncValue = vm.syncQuery
+    this._syncValue = vm.syncData
 
     // If No Sync Watchers are given, nothing to do
-    if (isEmpty(objects)) return
+    if (_.isEmpty(objects)) return
 
     // Set Watchers for the Given Values
     this._setWatchers(objects)
 
     // Finally read the query
     this.readQuery()
-  }
-
-  // Get only valid watcher Objects
-  _getValidSyncObjects(objects) {
-    let object = {}
-
-    for (let key in objects) {
-      // skip loop if the property is from prototype
-      if (!objects.hasOwnProperty(key)) continue
-
-      let obj = objects[key]
-
-      if (!obj.name || !isString(obj.name)) {
-        warn('The value "name" of the syncQuery Object has to be a String!')
-        continue
-      }
-      if (
-        !obj.type ||
-        !isObject(obj.type) ||
-        !obj.type.name ||
-        !(
-          obj.type.name === 'String' ||
-          obj.type.name === 'Number' ||
-          obj.type.name === 'Boolean' ||
-          obj.type.name === 'Array'
-        )
-      ) {
-        warn(
-          'The value "type" of the syncQuery Object has to be a String | Number | Boolean | Array!'
-        )
-        continue
-      }
-      if (obj.nullable && !isBoolean(obj.nullable)) {
-        warn(
-          'The value "nullable" of the syncQuery Object has to be a Boolean!'
-        )
-        continue
-      }
-      if (obj.validate && typeof obj.validate !== 'function') {
-        warn(
-          'The value "validate" of the syncQuery Object has to be a function!'
-        )
-        continue
-      }
-      object[key] = obj
-    }
-
-    return object
   }
 
   _setWatchers(elements) {
@@ -153,7 +97,8 @@ export default class VueSyncData {
     const self = this
     keys.forEach(key => {
       const element = elements[key]
-      const watchFn = new ValueWatchFn(element, key, self)
+      const watchFn = new ValueWatchFn(element, self)
+      const deep = element.type.name === 'Object'
 
       // Save the watcher in the Object
       self._watchers.push({
@@ -164,12 +109,15 @@ export default class VueSyncData {
         nullable: element.nullable !== undefined ? element.nullable : true,
         validate:
           typeof element.validate === 'function' ? element.validate : null,
-        watchFn
+        watchFn,
+        deep,
+        proto: deep ? element.proto : null
       })
       // Create Vue Watcher
       self._watchers[self._watchers.length - 1].unwatchFn = self._vm.$watch(
         key,
-        watchFn.watchFn
+        watchFn.watchFn,
+        { deep }
       )
     })
 
@@ -178,7 +126,8 @@ export default class VueSyncData {
     this._route_watcher = {
       unwatchFn: null,
       expression: '$route',
-      watchFn: watchFnRoute
+      watchFn: watchFnRoute,
+      deep: true
     }
     // Create Vue Watcher
     this._route_watcher.unwatchFn = this._vm.$watch(
@@ -191,12 +140,13 @@ export default class VueSyncData {
     let watchFnQuery = new QueryWatchFn(this)
     this._query_watcher = {
       unwatchFn: null,
-      expression: 'syncQuery.query',
-      watchFn: watchFnQuery
+      expression: 'syncData.query',
+      watchFn: watchFnQuery,
+      deep: false
     }
     // Create Vue Watcher
     this._query_watcher.unwatchFn = this._vm.$watch(
-      'syncQuery.query',
+      'syncData.query',
       watchFnQuery.watchFn,
       { deep: true }
     )
@@ -204,7 +154,7 @@ export default class VueSyncData {
 
   _unsetWatchers() {
     // Unset Value Watchers
-    if (this._watchers && isArray(this._watchers)) {
+    if (this._watchers && _.isArray(this._watchers)) {
       this._watchers.forEach(watcher => {
         watcher.unwatchFn()
       })
@@ -212,6 +162,7 @@ export default class VueSyncData {
 
     this._watchers = []
 
+    // TODO
     // Unset Route Watcher
     // this._route_watcher.unwatchFn()
     // delete this._route_watcher
@@ -221,6 +172,65 @@ export default class VueSyncData {
     // delete this._query_watcher
   }
 
+  _setValueToQuery = function(newValue, object, objectString = null) {
+    if (
+      newValue === undefined ||
+      newValue === null ||
+      (_.isEmpty(newValue) && (_.isObject(newValue) || _.isArray(newValue))) // For Objects and Arrays
+    )
+      this._vm.$delete(
+        this._syncValue.query,
+        (objectString ? objectString + '.' : '') + object.name,
+        newValue
+      )
+    else {
+      if (object.type.name === 'Object') {
+        for (let key in newValue) {
+          // skip loop if the property is from prototype
+          if (!newValue.hasOwnProperty(key)) continue
+
+          this._setValueToQuery(newValue[key], object.proto[key], object.name)
+        }
+      } else {
+        this._vm.$set(
+          this._syncValue.query,
+          (objectString ? objectString + '.' : '') + object.name,
+          newValue
+        )
+      }
+    }
+  }
+
+  _readValueFromQuery = function(watcher, objectString = null) {
+    if (watcher.type.name === 'Object') {
+      let object = {}
+      for (let key in watcher.proto) {
+        // skip loop if the property is from prototype
+        if (!watcher.proto.hasOwnProperty(key)) continue
+        object[key] = this._readValueFromQuery(watcher.proto[key], watcher.name)
+      }
+      return object
+    } else {
+      let value = this._vm.$route.query[
+        (objectString ? objectString + '.' : '') + watcher.name
+      ]
+
+      switch (watcher.type.name) {
+        case 'Array':
+          value = value === undefined || _.isArray(value) ? value : [value]
+          break
+        case 'Number':
+          value = value !== undefined ? parseFloat(value) : undefined
+          break
+        case 'Boolean':
+          value = _.isBoolean(value) ? value : value === 'true' ? true : false
+          break
+      }
+
+      return value
+    }
+  }
+
   readQuery = function() {
     if (!this._vm.$route) {
       warn('Vue Router is required!')
@@ -228,22 +238,28 @@ export default class VueSyncData {
     }
 
     const query = this._vm.$route.query
+    let value = {}
 
-    if (query && isObject(query) && !isEmpty(query)) {
+    if (query && _.isObject(query) && !_.isEmpty(query)) {
       for (let key in this._watchers) {
         // skip loop if the property is from prototype
         if (!this._watchers.hasOwnProperty(key)) continue
 
-        let obj = this._watchers[key]
-        // let type = obj.type.name
+        value[this._watchers[key].name] = this._readValueFromQuery(
+          this._watchers[key]
+        )
+      }
 
-        // if (type === 'Object') {
-        //   console.log('Objecterl')
-        // }
+      for (let key in value) {
+        // skip loop if the property is from prototype
+        if (!value.hasOwnProperty(key)) continue
 
-        let value = this._vm.$route.query[obj.name]
-        if (value !== undefined) {
-          set(this._vm, obj.expression, value)
+        if (value[key] !== undefined) {
+          _.set(
+            this._vm,
+            key, // _watchers[this._watchers[key].name].expression,
+            value[key]
+          )
         }
       }
     }
@@ -256,337 +272,3 @@ export default class VueSyncData {
     this._vm.$router.push({ query: this._syncValue.query })
   }
 }
-
-//   readQuery: function() {
-//     if (!this.vm) return
-
-//     this.query = clone(this.vm.$route.query)
-
-//     for (let key in this.watchers) {
-//       // skip loop if the property is from prototype
-//       if (!this.watchers.hasOwnProperty(key)) continue
-
-//       let obj = this.watchers[key]
-//       let type = obj.options.type.name
-
-//       switch (type) {
-//         case 'Array':
-//           console.log('treat like array')
-//           this.readArray(obj)
-//           break
-//         case 'Object':
-//           console.log('treat like object')
-//           this.readObject(obj)
-//           break
-//         case 'String':
-//           console.log('treat like string')
-//           this.readString(obj)
-//           break
-//         case 'Number':
-//           console.log('treat like number')
-//           this.readNumber(obj)
-//           break
-//         case 'Boolean':
-//           console.log('treat like boolean')
-//           this.readBoolean(obj)
-//           break
-//         default:
-//           throw new Error('type is not supported')
-//       }
-//     }
-//   },
-//   readString: function({ expression, options }) {
-//     console.log('read String')
-//     // Proto has to be string
-//     let value = this.vm.$route.query[options.proto]
-//     if (value) {
-//       set(this.vm, expression, value)
-//     }
-//   },
-//   setString: function(value, { expression, options }) {
-//     console.log('set String')
-//     // Proto has to be string
-//     // let value = this.vm.$route.query[options.proto]
-//     // if (value) {
-//     //   set(this.vm, expression, value)
-//     // }
-//   },
-//   readNumber: function({ expression, options }) {
-//     console.log('read Number')
-//     // Proto has to be string
-//     let value = this.vm.$route.query[options.proto]
-//     if (value) {
-//       set(this.vm, expression, parseFloat(value))
-//     }
-//   },
-//   setNumber: function(value, { expression, options }) {
-//     console.log('set Number')
-//     // Proto has to be string
-//     // let value = this.vm.$route.query[options.proto]
-//     // if (value) {
-//     //   set(this.vm, expression, value)
-//     // }
-//   },
-//   readBoolean: function({ expression, options }) {
-//     console.log('read Boolean')
-//     // Proto has to be string
-//     let value = this.vm.$route.query[options.proto]
-//     if (value) {
-//       set(this.vm, expression, JSON.parse(value))
-//     }
-//   },
-//   setBoolean: function(value, { expression, options }) {
-//     console.log('set Boolean')
-//   },
-//   readArray: function({ expression, options }) {
-//     console.log('read Boolean')
-//     // Proto has to be string
-//     let value = this.vm.$route.query[options.proto]
-//     if (value) {
-//       set(this.vm, expression, value)
-//     }
-//   },
-//   setArray: function(value, { expression, options }) {
-//     console.log('set Boolean')
-//   },
-//   readObject: function({ expression, options }) {
-//     console.log('read Boolean')
-//     // Proto has to be string
-//     let value = this.vm.$route.query[options.proto]
-//     if (value) {
-//       set(this.vm, expression, value)
-//     }
-//   },
-//   setObject: function(value, { expression, options }) {
-//     console.log('set Boolean')
-//   }
-// }
-
-// const object = {
-//   vm: null,
-//   watchers: [],
-//   route_watcher: null,
-//   query: {},
-//   $sync: null,
-//   router_query: {},
-//   init: function(vm) {
-//     this.vm = vm
-//     const objects = vm.$options.__proto__.sync
-//     if (isObject(objects)) {
-//       this.addWatchers(vm, objects)
-//     }
-//     // Read the Query on start
-//     this.readQuery()
-//     // delete this.init
-//   },
-//   addWatchers: function(vm = this.vm, elements) {
-//     if (!vm) throw new Error('No Vue Instance Given!')
-
-//     if (!isObject(elements))
-//       throw new Error('Second Value is expected to be an Object!')
-
-//     const keys = Object.keys(elements)
-
-//     keys.forEach(key => {
-//       let element = elements[key]
-//       let watchFn = new this.WatchFnPrototype(element, key, vm, this)
-//       // Save the watcher in the Object
-//       this.watchers.push({
-//         unwatchFn: null,
-//         expression: key,
-//         watchFn,
-//         options: element
-//       })
-//       // Create Vue Watcher
-//       this.watchers[this.watchers.length - 1].unwatchFn = vm.$watch(
-//         key,
-//         watchFn.watchFn,
-//         { deep: true }
-//       )
-//     })
-
-//     if (keys.length > 0) {
-//       vm.$data.$sync = {
-//         query: {}
-//       }
-
-//       this.$sync = vm.$data.$sync
-//     }
-
-//     // Create Route Watcher
-//     let watchFnRoute = new this.WatchFnRoutePrototype(vm, this)
-//     this.route_watcher = {
-//       unwatchFn: null,
-//       expression: '$route',
-//       watchFn: watchFnRoute
-//     }
-//     // Create Vue Watcher
-//     this.route_watcher.unwatchFn = vm.$watch('$route', watchFnRoute.watchFn)
-
-//     // Create Query Watcher
-//     let watchFnQuery = new this.WatchFnQueryPrototype(vm, this)
-//     this.query_watcher = {
-//       unwatchFn: null,
-//       expression: '$sync.query',
-//       watchFn: watchFnQuery
-//     }
-//     // Create Vue Watcher
-//     this.route_watcher.unwatchFn = vm.$watch(
-//       '$sync.query',
-//       watchFnQuery.watchFn
-//     )
-//   },
-//   removeWatchers(vm = this.vm, elements) {
-//     if (!vm) throw new Error('No Vue Instance Given!')
-
-//     if (!isArray(elements))
-//       throw new Error('Second Value is expected to be an Array!')
-
-//     elements.forEach(element => {
-//       vm.$watch(element, this.watchFn)
-//     })
-//   },
-//   WatchFnRoutePrototype(vm, parent) {
-//     this.vm = vm
-//     this.parent = parent
-//     this.watchFn = (newValue, oldValue) => {
-//       console.log('Route Query Changed')
-//       console.log(newValue)
-//       console.log(oldValue)
-//       parent.readQuery()
-//     }
-//   },
-//   WatchFnQueryPrototype(vm, parent) {
-//     this.vm = vm
-//     this.parent = parent
-//     this.watchFn = (newValue, oldValue) => {
-//       console.log('Query Changed')
-//       console.log(newValue)
-//       console.log(oldValue)
-//       parent.setQuery()
-//     }
-//   },
-//   WatchFnPrototype(object, expression, vm, parent) {
-//     this.object = object
-//     this.expression = expression
-//     this.vm = vm
-//     this.parent = parent
-//     this.watchFn = (newValue, oldValue) => {
-//       console.log('Watch of:')
-//       console.log(this.expression)
-//       this.parent.$sync.query[this.object.proto] = newValue
-//       console.log(this.object)
-//       console.log(newValue)
-//       console.log(oldValue)
-//       console.log('edit Value')
-//       console.log(get(this.vm, expression, null))
-//       // this.parent.setQuery()
-//     }
-//   },
-//   readQuery: function() {
-//     if (!this.vm) return
-
-//     this.query = clone(this.vm.$route.query)
-
-//     for (let key in this.watchers) {
-//       // skip loop if the property is from prototype
-//       if (!this.watchers.hasOwnProperty(key)) continue
-
-//       let obj = this.watchers[key]
-//       let type = obj.options.type.name
-
-//       switch (type) {
-//         case 'Array':
-//           console.log('treat like array')
-//           this.readArray(obj)
-//           break
-//         case 'Object':
-//           console.log('treat like object')
-//           this.readObject(obj)
-//           break
-//         case 'String':
-//           console.log('treat like string')
-//           this.readString(obj)
-//           break
-//         case 'Number':
-//           console.log('treat like number')
-//           this.readNumber(obj)
-//           break
-//         case 'Boolean':
-//           console.log('treat like boolean')
-//           this.readBoolean(obj)
-//           break
-//         default:
-//           throw new Error('type is not supported')
-//       }
-//     }
-//   },
-//   setQuery: function() {
-//     this.vm.$router.push({ query: this.$sync.query })
-//   },
-//   readString: function({ expression, options }) {
-//     console.log('read String')
-//     // Proto has to be string
-//     let value = this.vm.$route.query[options.proto]
-//     if (value) {
-//       set(this.vm, expression, value)
-//     }
-//   },
-//   setString: function(value, { expression, options }) {
-//     console.log('set String')
-//     // Proto has to be string
-//     // let value = this.vm.$route.query[options.proto]
-//     // if (value) {
-//     //   set(this.vm, expression, value)
-//     // }
-//   },
-//   readNumber: function({ expression, options }) {
-//     console.log('read Number')
-//     // Proto has to be string
-//     let value = this.vm.$route.query[options.proto]
-//     if (value) {
-//       set(this.vm, expression, parseFloat(value))
-//     }
-//   },
-//   setNumber: function(value, { expression, options }) {
-//     console.log('set Number')
-//     // Proto has to be string
-//     // let value = this.vm.$route.query[options.proto]
-//     // if (value) {
-//     //   set(this.vm, expression, value)
-//     // }
-//   },
-//   readBoolean: function({ expression, options }) {
-//     console.log('read Boolean')
-//     // Proto has to be string
-//     let value = this.vm.$route.query[options.proto]
-//     if (value) {
-//       set(this.vm, expression, JSON.parse(value))
-//     }
-//   },
-//   setBoolean: function(value, { expression, options }) {
-//     console.log('set Boolean')
-//   },
-//   readArray: function({ expression, options }) {
-//     console.log('read Boolean')
-//     // Proto has to be string
-//     let value = this.vm.$route.query[options.proto]
-//     if (value) {
-//       set(this.vm, expression, value)
-//     }
-//   },
-//   setArray: function(value, { expression, options }) {
-//     console.log('set Boolean')
-//   },
-//   readObject: function({ expression, options }) {
-//     console.log('read Boolean')
-//     // Proto has to be string
-//     let value = this.vm.$route.query[options.proto]
-//     if (value) {
-//       set(this.vm, expression, value)
-//     }
-//   },
-//   setObject: function(value, { expression, options }) {
-//     console.log('set Boolean')
-//   }
-// }

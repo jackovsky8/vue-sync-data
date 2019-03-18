@@ -3,12 +3,12 @@ import VueSyncData from './main'
 export default {
   data: function() {
     return {
-      syncQuery: {
+      syncData: {
         query: {}
       }
     }
   },
   created() {
-    this._syncQuery = new VueSyncData(this)
+    this._syncData = new VueSyncData(this)
   }
 }

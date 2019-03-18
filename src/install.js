@@ -27,5 +27,5 @@ export function install(_Vue) {
   Vue.mixin(mixin)
 
   const strategies = Vue.config.optionMergeStrategies
-  strategies.syncQuery = strategies.props
+  strategies.syncData = strategies.props
 }
