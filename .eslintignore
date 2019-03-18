@@ -1,0 +1,10 @@
+# Ignore Node Modules
+node_modules/**
+
+#Vs Code
+.vscode
+
+# Git'Files
+.git
+
+dist/**

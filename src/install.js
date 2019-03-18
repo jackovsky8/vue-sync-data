@@ -4,7 +4,8 @@ import mixin from './mixin'
 
 export let Vue
 
-export function install(_Vue, options = {}) {
+export function install(_Vue) {
+  //, options = {}) {
   if (
     process.env.NODE_ENV !== 'production' &&
     install.installed &&
@@ -18,9 +19,9 @@ export function install(_Vue, options = {}) {
   Vue = _Vue
 
   // Set Standard Options
-  options = {
-    ...options
-  }
+  // options = {
+  //   ...options
+  // }
 
   extend(Vue)
   Vue.mixin(mixin)

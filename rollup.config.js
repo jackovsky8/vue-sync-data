@@ -1,43 +1,66 @@
-import babel from 'rollup-plugin-babel'
-import { uglify } from 'rollup-plugin-uglify'
 import resolve from 'rollup-plugin-node-resolve'
-import sourcemaps from 'rollup-plugin-sourcemaps'
 import commonjs from 'rollup-plugin-commonjs'
+import pkg from './package.json'
+import babel from 'rollup-plugin-babel'
+import { eslint } from 'rollup-plugin-eslint'
+import minify from 'rollup-plugin-babel-minify'
 
-// Add here external dependencies that actually you use.
-const globals = { lodash: 'lodash' }
-
-export default {
-  external: Object.keys(globals),
-  input: './src/index.js',
-  output: {
-    format: 'umd',
-    name: 'syncQuery',
-    globals: globals,
-    sourcemap: true,
-    exports: 'named',
-    file: 'vue-sync-query.js'
+export default [
+  // browser-friendly UMD build
+  {
+    input: 'src/main.js',
+    output: {
+      name: 'VueSyncData',
+      file: pkg.browser,
+      format: 'umd',
+      exports: 'named'
+    },
+    plugins: [
+      eslint(),
+      babel({
+        exclude: 'node_modules/**',
+        presets: ['@babel/preset-env'],
+        plugins: ['@babel/plugin-proposal-class-properties']
+      }),
+      resolve(), // so Rollup can find `lodash`
+      commonjs(),
+      minify({
+        comments: false
+      })
+    ]
   },
-  plugins: [
-    babel({
-      exclude: 'node_modules/**',
-      presets: ['@babel/preset-env'],
-      plugins: ['@babel/plugin-proposal-class-properties']
-    }),
-    uglify(),
-    resolve(),
-    sourcemaps(),
-    commonjs({
-      namedExports: {
-        'node_modules/lodash/index.js': [
-          'isObject',
-          'isEmpty',
-          'isArray',
-          'isString',
-          'isBoolean',
-          'set'
-        ]
+
+  // CommonJS (for Node) and ES module (for bundlers) build.
+  // (We could have three entries in the configuration array
+  // instead of two, but it's quicker to generate multiple
+  // builds from a single configuration where possible, using
+  // an array for the `output` option, where we can specify
+  // `file` and `format` for each target)
+  {
+    input: 'src/main.js',
+    external: ['lodash-es'],
+    output: [
+      {
+        file: pkg.main,
+        format: 'cjs',
+        exports: 'named'
+      },
+      {
+        file: pkg.module,
+        format: 'es',
+        exports: 'named'
       }
-    })
-  ]
-}
+    ],
+    plugins: [
+      eslint(),
+      babel({
+        exclude: 'node_modules/**',
+        presets: ['@babel/preset-env'],
+        plugins: ['@babel/plugin-proposal-class-properties']
+      }),
+      minify({
+        comments: false
+      })
+    ]
+  }
+]

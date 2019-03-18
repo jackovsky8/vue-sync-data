@@ -1,4 +1,4 @@
-import SyncQuery from './index'
+import VueSyncData from './main'
 
 export default {
   data: function() {
@@ -9,6 +9,6 @@ export default {
     }
   },
   created() {
-    this._syncQuery = new SyncQuery(this)
+    this._syncQuery = new VueSyncData(this)
   }
 }

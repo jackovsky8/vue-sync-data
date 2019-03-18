@@ -1,6 +1,6 @@
 import { install, Vue } from './install'
 import { warn } from './util'
-import { isObject, isEmpty, isArray, isString, isBoolean, set } from 'lodash'
+import { isObject, isEmpty, isArray, isString, isBoolean, set } from 'lodash-es'
 
 class ValueWatchFn {
   _object
@@ -34,7 +34,7 @@ class RouteWatchFn {
     this.parent = parent
   }
 
-  watchFn = (newValue, oldValue) => {
+  watchFn = () => {
     this.parent.readQuery()
   }
 }
@@ -46,12 +46,13 @@ class QueryWatchFn {
     this.parent = parent
   }
 
-  watchFn = (newValue, oldValue) => {
+  watchFn = () => {
     this.parent.setQuery()
   }
 }
 
-export default class SyncQuery {
+export const test = 'me'
+export default class VueSyncData {
   static install = install
 
   _vm
@@ -104,7 +105,7 @@ export default class SyncQuery {
       let obj = objects[key]
 
       if (!obj.name || !isString(obj.name)) {
-        warn(`The value 'name' of the syncQuery Object has to be a String!`)
+        warn('The value "name" of the syncQuery Object has to be a String!')
         continue
       }
       if (
@@ -119,19 +120,19 @@ export default class SyncQuery {
         )
       ) {
         warn(
-          `The value 'type' of the syncQuery Object has to be a String | Number | Boolean | Array!`
+          'The value "type" of the syncQuery Object has to be a String | Number | Boolean | Array!'
         )
         continue
       }
       if (obj.nullable && !isBoolean(obj.nullable)) {
         warn(
-          `The value 'nullable' of the syncQuery Object has to be a Boolean!`
+          'The value "nullable" of the syncQuery Object has to be a Boolean!'
         )
         continue
       }
       if (obj.validate && typeof obj.validate !== 'function') {
         warn(
-          `The value 'validate' of the syncQuery Object has to be a function!`
+          'The value "validate" of the syncQuery Object has to be a function!'
         )
         continue
       }
@@ -234,11 +235,11 @@ export default class SyncQuery {
         if (!this._watchers.hasOwnProperty(key)) continue
 
         let obj = this._watchers[key]
-        let type = obj.type.name
+        // let type = obj.type.name
 
-        if (type === 'Object') {
-          console.log('Objecterl')
-        }
+        // if (type === 'Object') {
+        //   console.log('Objecterl')
+        // }
 
         let value = this._vm.$route.query[obj.name]
         if (value !== undefined) {

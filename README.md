@@ -45,12 +45,13 @@ validate:
 - Function // You receive newValue as first Argument and return Boolean
 
 proto: 
-- Only for type Object
-- typeof Object
-- {
-    value: {
-        type: Number,
-        name: value
-    }
-}
+- required for type Object
+- Object of watchers
+```
+
+## developing
+```javascript
+npm run test // Run Tests
+npm run build // Build the Package
+npm run lint // Lint the Package
 ```
