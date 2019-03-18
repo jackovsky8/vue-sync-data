@@ -1,16 +1,16 @@
-# vue-sync-query
+# vue-sync-data
 ### Auto Sync Vue Data to Query String
 
 ## install
 
 ```javascript
-npm install --save vue-data-sync
+npm install --save vue-sync-data
 ```
 
 ```javascript
 import Vue from 'vue'
-import VueSyncQuery from 'vue-data-sync'
-Vue.use(VueSyncQuery)
+import VueSyncData from 'vue-sync-data'
+Vue.use(VueSyncData)
 
 export default {
     data() {
@@ -45,7 +45,7 @@ validate:
 - Function // You receive newValue as first Argument and return Boolean
 
 proto: 
-- required for type Object
+- required when type Object
 - Object of watchers
 ```
 
