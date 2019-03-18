@@ -61,7 +61,7 @@ typings/
 .next
 
 # Settings of VS Code
-vscode/
+.vscode/
 
 # Compiled Files
 dist/
