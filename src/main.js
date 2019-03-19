@@ -1,46 +1,8 @@
 import { install, Vue } from './install'
 import { _getValidSyncObjects, _validateSyncObject } from './validate'
 import { warn } from './util'
+import { ValueWatchFn, RouteWatchFn, QueryWatchFn } from './watcher'
 import _ from 'lodash'
-
-class ValueWatchFn {
-  _object
-  _parent
-
-  constructor(object, parent) {
-    this._object = object
-    this._parent = parent
-  }
-
-  watchFn = newValue => {
-    this._parent._setValueToQuery(newValue, this._object)
-  }
-}
-
-class RouteWatchFn {
-  parent
-
-  constructor(parent) {
-    this.parent = parent
-  }
-
-  watchFn = () => {
-    this.parent.readQuery()
-  }
-}
-
-class QueryWatchFn {
-  parent
-
-  constructor(parent) {
-    this.parent = parent
-  }
-
-  watchFn = () => {
-    this.parent.setQuery()
-  }
-}
-
 export default class VueSyncData {
   static install = install
 
@@ -180,7 +142,7 @@ export default class VueSyncData {
     )
       this._vm.$delete(
         this._syncValue.query,
-        (objectString ? objectString + '.' : '') + object.name,
+        (objectString ? objectString + '-' : '') + object.name,
         newValue
       )
     else {
@@ -194,7 +156,7 @@ export default class VueSyncData {
       } else {
         this._vm.$set(
           this._syncValue.query,
-          (objectString ? objectString + '.' : '') + object.name,
+          (objectString ? objectString + '-' : '') + object.name,
           newValue
         )
       }
@@ -212,7 +174,7 @@ export default class VueSyncData {
       return object
     } else {
       let value = this._vm.$route.query[
-        (objectString ? objectString + '.' : '') + watcher.name
+        (objectString ? objectString + '-' : '') + watcher.name
       ]
 
       switch (watcher.type.name) {
@@ -236,6 +198,8 @@ export default class VueSyncData {
       warn('Vue Router is required!')
       return
     }
+
+    warn('READ QUERY')
 
     const query = this._vm.$route.query
     let value = {}
@@ -268,6 +232,8 @@ export default class VueSyncData {
   // Set the query
   setQuery = function() {
     if (!this._vm.$router) return
+
+    warn('SET QUERY')
 
     this._vm.$router.push({ query: this._syncValue.query })
   }

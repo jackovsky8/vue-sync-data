@@ -72,20 +72,23 @@ export function _validateSyncObject(element, key) {
     return false
   }
   // Check the proto Object
-  if (
-    element.type.name === 'Object' &&
-    (!element.proto || !_.isObject(element.proto) || _.isEmpty(element.proto))
-  ) {
-    warn('The Value proto is required for Objects')
-    return false
-  } else {
-    for (let k in element.proto) {
-      // skip loop if the property is from prototype
-      if (!element.proto.hasOwnProperty(k)) continue
+  if (element.type.name === 'Object') {
+    if (
+      !element.proto ||
+      !_.isObject(element.proto) ||
+      _.isEmpty(element.proto)
+    ) {
+      warn('The Value proto is required for Objects')
+      return false
+    } else {
+      for (let k in element.proto) {
+        // skip loop if the property is from prototype
+        if (!element.proto.hasOwnProperty(k)) continue
 
-      let el = element.proto[k]
+        let el = element.proto[k]
 
-      if (!VueSyncData._validateSyncObject(el, key + '.' + k)) return false
+        if (!VueSyncData._validateSyncObject(el, key + '.' + k)) return false
+      }
     }
   }
   // Otherwise return the valid element
