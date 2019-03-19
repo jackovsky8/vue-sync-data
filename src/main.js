@@ -16,6 +16,8 @@ export default class VueSyncData {
   _query_watcher
   _query
   _syncValue
+  _lockReader = []
+  _lockSetter = []
 
   constructor(vm) {
     if (vm instanceof Vue) {
@@ -58,7 +60,20 @@ export default class VueSyncData {
     const keys = Object.keys(elements)
     const self = this
     keys.forEach(key => {
-      const element = elements[key]
+      let element = elements[key]
+      element = {
+        ...elements[key],
+        nullable: element.nullable !== undefined ? element.nullable : true,
+        validate:
+          typeof element.validate === 'function' ? element.validate : null,
+        throttled:
+          typeof element.throttled === 'number'
+            ? element.throttled
+            : typeof element.throttled === 'boolean' && !element.throttled
+              ? false
+              : 3000
+      }
+
       const watchFn = new ValueWatchFn(element, self)
       const deep = element.type.name === 'Object'
 
@@ -68,13 +83,14 @@ export default class VueSyncData {
         expression: key,
         name: element.name,
         type: element.type,
-        nullable: element.nullable !== undefined ? element.nullable : true,
-        validate:
-          typeof element.validate === 'function' ? element.validate : null,
+        nullable: element.nullable,
+        validate: element.validate,
+        throttled: element.throttled,
         watchFn,
         deep,
-        proto: deep ? element.proto : null
+        proto: deep ? element.proto : undefined
       })
+
       // Create Vue Watcher
       self._watchers[self._watchers.length - 1].unwatchFn = self._vm.$watch(
         key,
@@ -154,6 +170,13 @@ export default class VueSyncData {
           this._setValueToQuery(newValue[key], object.proto[key], object.name)
         }
       } else {
+        // this._throttled(
+        //   this._vm.$set,
+        //   this._syncValue.query,
+        //   (objectString ? objectString + '-' : '') + object.name,
+        //   newValue
+        // )
+
         this._vm.$set(
           this._syncValue.query,
           (objectString ? objectString + '-' : '') + object.name,
@@ -199,9 +222,15 @@ export default class VueSyncData {
       return
     }
 
-    warn('READ QUERY')
-
     const query = this._vm.$route.query
+
+    if (this._lockReader && _.isEqual(this._lockReader, query)) {
+      this._lockReader = undefined
+      return
+    }
+
+    this._lockReader = undefined
+
     let value = {}
 
     if (query && _.isObject(query) && !_.isEmpty(query)) {
@@ -213,6 +242,8 @@ export default class VueSyncData {
           this._watchers[key]
         )
       }
+
+      this._lockSetter = query
 
       for (let key in value) {
         // skip loop if the property is from prototype
@@ -233,8 +264,18 @@ export default class VueSyncData {
   setQuery = function() {
     if (!this._vm.$router) return
 
-    warn('SET QUERY')
+    const query = this._syncValue.query
 
-    this._vm.$router.push({ query: this._syncValue.query })
+    if (this._lockSetter && _.isEqual(this._lockSetter, query)) {
+      this._lockSetter = undefined
+      return
+    }
+
+    this._lockSetter = undefined
+
+    // Save the query
+    this._lockReader = { ...query }
+
+    this._vm.$router.push({ query: query })
   }
 }

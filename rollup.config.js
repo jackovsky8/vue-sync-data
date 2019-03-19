@@ -23,10 +23,10 @@ export default [
         plugins: ['@babel/plugin-proposal-class-properties', 'lodash']
       }),
       resolve(),
-      commonjs(),
-      minify({
-        comments: false
-      })
+      commonjs() // ,
+      // minify({
+      //   comments: false
+      // })
     ]
   },
 
@@ -44,7 +44,9 @@ export default [
       'lodash/isBoolean',
       'lodash/isObject',
       'lodash/isEmpty',
-      'lodash/isString'
+      'lodash/isString',
+      'lodash/isEqual',
+      'lodash/throttle'
     ],
     output: [
       {
@@ -64,10 +66,10 @@ export default [
         exclude: 'node_modules/**',
         presets: ['@babel/preset-env'],
         plugins: ['@babel/plugin-proposal-class-properties', 'lodash']
-      }),
-      minify({
-        comments: false
-      })
+      }) // ,
+      // minify({
+      //   comments: false
+      // })
     ]
   }
 ]

@@ -27,23 +27,46 @@ export default {
 
 Now the query is kept in Sync with the Value
 
-Options for the watchers
+## Options for the watchers
 
+#### type - Define the Type of the Value
 ```javascript
 type: 
 - required
 - String | Number | Boolean | Array | Object
+```
 
+#### name - Define the Name in the Query
+```javascript
 name: 
 - required
 - String
+```
 
+#### nullable - Define if the Value gets set to null or '' | 0 | false | [] | {} if the Object does not exist in query
+```javascript
 nullable:
 - Boolean
+- default true
+```
 
+#### validate - Define a validation function for the value, if you return false, the value is deleted from the query
+```javascript
 validate: 
-- Function // You receive newValue as first Argument and return Boolean
+- Function | null
+- default null
+```
 
+
+#### throttle - Add throttle to the value watcher (Useful for inputs with fast typing, otherwise input gonna not be fluid) - Value in Miliseconds
+```javascript
+throttle: 
+- Number | false
+- default 2000
+```
+
+#### proto - Define the design of the Object you wanna sync with the query, can contain all Options like a normal watcher
+```javascript
 proto: 
 - required when type Object
 - Object of watchers
