@@ -58,9 +58,9 @@ validate:
 ```
 
 
-#### throttle - Add throttle to the value watcher (Useful for inputs with fast typing, otherwise input gonna not be fluid) - Value in Miliseconds
+#### throttled - Add throttle to the value watcher (Useful for inputs with fast typing, otherwise input gonna not be fluid) - Value in Miliseconds
 ```javascript
-throttle: 
+throttled: 
 - Number | false
 - default 2000
 ```
