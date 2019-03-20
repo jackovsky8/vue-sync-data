@@ -151,36 +151,46 @@ export default class VueSyncData {
   }
 
   _setValueToQuery = function(newValue, object, objectString = null) {
+    // Change Value
+    let value = newValue
+    switch (object.type.name) {
+      case 'Number':
+        if (value === 0) value = null
+        break
+      case 'String':
+        if (value === '') value = null
+        break
+      case 'Array':
+        if (!_.isArray(value) || _.isEmpty(value)) value = null
+        break
+      case 'Object':
+        if (!_.isObject(value) || _.isEmpty(value)) value = null
+        break
+    }
+
     if (
-      newValue === undefined ||
-      newValue === null ||
-      (_.isEmpty(newValue) && (_.isObject(newValue) || _.isArray(newValue))) // For Objects and Arrays
+      value === undefined ||
+      value === null ||
+      (_.isEmpty(value) && (_.isObject(value) || _.isArray(value))) // For Objects and Arrays
     )
       this._vm.$delete(
         this._syncValue.query,
         (objectString ? objectString + '-' : '') + object.name,
-        newValue
+        value
       )
     else {
       if (object.type.name === 'Object') {
-        for (let key in newValue) {
+        for (let key in value) {
           // skip loop if the property is from prototype
-          if (!newValue.hasOwnProperty(key)) continue
+          if (!value.hasOwnProperty(key)) continue
 
-          this._setValueToQuery(newValue[key], object.proto[key], object.name)
+          this._setValueToQuery(value[key], object.proto[key], object.name)
         }
       } else {
-        // this._throttled(
-        //   this._vm.$set,
-        //   this._syncValue.query,
-        //   (objectString ? objectString + '-' : '') + object.name,
-        //   newValue
-        // )
-
         this._vm.$set(
           this._syncValue.query,
           (objectString ? objectString + '-' : '') + object.name,
-          newValue
+          value
         )
       }
     }
@@ -250,11 +260,9 @@ export default class VueSyncData {
         if (!value.hasOwnProperty(key)) continue
 
         if (value[key] !== undefined) {
-          _.set(
-            this._vm,
-            key, // _watchers[this._watchers[key].name].expression,
-            value[key]
-          )
+          // Get the watcher by name & set the value to the component
+          let watcher = this._watchers.filter(el => el.name === key)
+          _.set(this._vm, watcher[0].expression, value[key])
         }
       }
     }

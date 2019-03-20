@@ -3,7 +3,7 @@ import commonjs from 'rollup-plugin-commonjs'
 import pkg from './package.json'
 import babel from 'rollup-plugin-babel'
 import { eslint } from 'rollup-plugin-eslint'
-import minify from 'rollup-plugin-babel-minify'
+// import minify from 'rollup-plugin-babel-minify'
 
 export default [
   // browser-friendly UMD build

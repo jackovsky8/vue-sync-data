@@ -17,8 +17,10 @@ export class ValueWatchFn {
   }
 
   watchFn = newValue => {
-    if (this._throttle) this._throttle(newValue)
-    else this._parent._setValueToQuery(newValue, this._object)
+    this._parent._vm.$nextTick().then(async () => {
+      if (this._throttle) this._throttle(newValue)
+      else this._parent._setValueToQuery(newValue, this._object)
+    })
   }
 }
 export class RouteWatchFn {
