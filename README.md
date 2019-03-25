@@ -69,7 +69,7 @@ validate:
 ```javascript
 throttled: 
 - Number | false
-- default 2000
+- default 3000
 ```
 
 #### proto - Define the design of the Object you wanna sync with the query, can contain all Options like a normal watcher
