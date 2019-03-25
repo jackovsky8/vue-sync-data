@@ -261,7 +261,7 @@ export default class VueSyncData {
       ]
 
       // Set to null if ''
-      value = value === '' ? null : value
+      value = value === '' || value === undefined ? null : value
 
       // Validate Value
       if (!this._validateValue(watcher, value)) value = null
@@ -307,9 +307,11 @@ export default class VueSyncData {
   }
 
   _validateValue(watcher, value) {
-    console.log(watcher) //eslint-disable-line
-    console.log(value) // eslint-disable-line
-    return true
+    if (value === undefined || value === null) return true
+
+    if (watcher.validate && typeof watcher.validate === 'function')
+      return watcher.validate(value)
+    else return true
   }
 
   readQuery = function() {
