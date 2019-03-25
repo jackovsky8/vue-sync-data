@@ -50,6 +50,13 @@ nullable:
 - default true
 ```
 
+#### toNull - If a value given no query will be set if (value == toNull), if (toNull === null) a query will be always set
+```javascript
+toNull:
+- Any
+- default [String: '' | Number: 0 | Boolean: false | Array: [] | Object: {}]
+```
+
 #### validate - Define a validation function for the value, if you return false, the value is deleted from the query
 ```javascript
 validate: 

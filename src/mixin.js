@@ -4,7 +4,8 @@ export default {
   data: function() {
     return {
       syncData: {
-        query: {}
+        query: {},
+        data: {}
       }
     }
   },

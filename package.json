@@ -1,14 +1,16 @@
 {
   "name": "vue-sync-data",
-  "version": "1.0.0-beta0.0.4",
+  "version": "1.0.0-beta0.0.5",
   "description": "Auto Sync Vue Data to Query String",
   "main": "dist/vue-sync-data.cjs.js",
   "module": "dist/vue-sync-data.esm.js",
   "browser": "dist/vue-sync-data.umd.js",
   "scripts": {
-    "test": "npm run build && xo src/**/* && karma start",
+    "test": "npm run build && eslint --ext .js --ignore-path .eslintignore . && jest",
     "build": "rollup -c",
-    "dev": "rollup -c --watch",
+    "dev": "concurrently --kill-others \"npm run watch\" \"npm run start\"   ",
+    "watch": "rollup -c --watch",
+    "start": "./node_modules/webpack-dev-server/bin/webpack-dev-server.js --content-base examples --open --inline --hot",
     "lint": "eslint --fix --ext .js --ignore-path .eslintignore ."
   },
   "files": [
@@ -27,19 +29,37 @@
   "author": "jackovsky8",
   "license": "MIT",
   "devDependencies": {
-    "@babel/core": "^7.3.4",
-    "@babel/plugin-proposal-class-properties": "^7.3.4",
-    "@babel/preset-env": "^7.3.4",
+    "@babel/core": "^7.4.0",
+    "@babel/plugin-proposal-class-properties": "^7.4.0",
+    "@babel/preset-env": "^7.4.2",
+    "@vue/test-utils": "^1.0.0-beta.29",
+    "babel-jest": "^24.5.0",
+    "babel-loader": "^8.0.5",
     "babel-plugin-lodash": "^3.3.4",
+    "concurrently": "^4.1.0",
     "eslint": "^5.15.3",
-    "rollup": "^1.6.0",
+    "jest": "^24.5.0",
+    "rollup": "^1.7.0",
     "rollup-plugin-babel": "^4.3.2",
     "rollup-plugin-babel-minify": "^8.0.0",
     "rollup-plugin-commonjs": "^9.2.1",
     "rollup-plugin-eslint": "^5.0.0",
-    "rollup-plugin-node-resolve": "^4.0.1"
+    "rollup-plugin-node-resolve": "^4.0.1",
+    "sass-loader": "^7.1.0",
+    "vue": "^2.6.10",
+    "vue-json-pretty": "^1.4.1",
+    "vue-loader": "^15.7.0",
+    "vue-router": "^3.0.2",
+    "vue-template-compiler": "^2.6.10",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0",
+    "webpack-dev-server": "^3.2.1"
   },
   "dependencies": {
     "lodash": "^4.17.11"
+  },
+  "peerDependencies": {
+    "vue-router": "^3.0.0",
+    "vue": "^2.0.0"
   }
 }

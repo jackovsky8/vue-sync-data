@@ -25,7 +25,12 @@ export default [
       resolve(),
       commonjs() // ,
       // minify({
-      //   comments: false
+      //   comments: false,
+      //   banner:
+      //     '/*!vue-sync-data v' +
+      //     pkg.version +
+      //     '\n*  (c) 2019 jackovsky8\n*  @licence MIT\n*/',
+      //   bannerNewLine: true
       // })
     ]
   },
@@ -46,7 +51,8 @@ export default [
       'lodash/isEmpty',
       'lodash/isString',
       'lodash/isEqual',
-      'lodash/throttle'
+      'lodash/throttle',
+      'lodash/get'
     ],
     output: [
       {
@@ -68,7 +74,12 @@ export default [
         plugins: ['@babel/plugin-proposal-class-properties', 'lodash']
       }) // ,
       // minify({
-      //   comments: false
+      //   comments: false,
+      //   banner:
+      //     '/*!vue-sync-data v' +
+      //     pkg.version +
+      //     '\n*  (c) 2019 jackovsky8\n*  @licence MIT\n*/',
+      //   bannerNewLine: true
       // })
     ]
   }

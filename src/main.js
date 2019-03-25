@@ -1,21 +1,30 @@
 import { install, Vue } from './install'
-import { _getValidSyncObjects, _validateSyncObject } from './validate'
+import { getValidSyncObjects, validateSyncObject } from './validate'
 import { warn } from './util'
-import { ValueWatchFn, RouteWatchFn, QueryWatchFn } from './watcher'
+import { standardToNull, nullObjectFromProto } from './helper'
+import {
+  ValueWatchFn,
+  RouteWatchFn,
+  QueryWatchFn,
+  DataWatchFn
+} from './watcher'
 import _ from 'lodash'
+
 export default class VueSyncData {
   static install = install
 
   // Static Helper Functions
-  static _getValidSyncObjects = _getValidSyncObjects
-  static _validateSyncObject = _validateSyncObject
+  static _getValidSyncObjects = getValidSyncObjects
+  static _validateSyncObject = validateSyncObject
+  static _standardToNull = standardToNull
+  static _nullObjectFromProto = nullObjectFromProto
 
   _vm
-  _watchers
+  _value_watchers
   _route_watcher
   _query_watcher
-  _query
-  _syncValue
+  _data_watchers
+  _syncData
   _lockReader = []
   _lockSetter = []
 
@@ -23,7 +32,7 @@ export default class VueSyncData {
     if (vm instanceof Vue) {
       this._vm = vm
     } else {
-      warn('You have to give the Vue instance to Sync Query!')
+      warn('You have to give the Vue instance of your component to Sync Data!')
       return
     }
 
@@ -38,7 +47,7 @@ export default class VueSyncData {
     }
 
     // Copy the Reference from the vm to this array
-    this._syncValue = vm.syncData
+    this._syncData = vm.syncData
 
     // If No Sync Watchers are given, nothing to do
     if (_.isEmpty(objects)) return
@@ -53,48 +62,64 @@ export default class VueSyncData {
   _setWatchers(elements) {
     if (!this._vm) return
 
-    // Set the Value Watchers
-    // But first Unset if there are existing already some
+    // First Unset if there are existing already some
     this._unsetWatchers()
 
+    // Set the Value Watchers
     const keys = Object.keys(elements)
     const self = this
+
     keys.forEach(key => {
       let element = elements[key]
-      element = {
-        ...elements[key],
-        nullable: element.nullable !== undefined ? element.nullable : true,
-        validate:
-          typeof element.validate === 'function' ? element.validate : null,
-        throttled:
-          typeof element.throttled === 'number'
-            ? element.throttled
-            : typeof element.throttled === 'boolean' && !element.throttled
-              ? false
-              : 3000
-      }
 
-      const watchFn = new ValueWatchFn(element, self)
+      const valueWatchFn = new ValueWatchFn(element, self)
       const deep = element.type.name === 'Object'
 
-      // Save the watcher in the Object
-      self._watchers.push({
+      // Set the standard for all Objects
+      element = {
+        ...elements[key],
         unwatchFn: null,
-        expression: key,
+        watchFn: valueWatchFn,
+        expression: element.expression,
         name: element.name,
         type: element.type,
         nullable: element.nullable,
+        toNull: element.toNull,
         validate: element.validate,
         throttled: element.throttled,
-        watchFn,
-        deep,
-        proto: deep ? element.proto : undefined
-      })
+        proto: deep ? element.proto : undefined,
+        deep
+      }
+
+      // Save the watcher in the Object
+      self._value_watchers.push({ ...element })
 
       // Create Vue Watcher
-      self._watchers[self._watchers.length - 1].unwatchFn = self._vm.$watch(
-        key,
-        watchFn.watchFn,
+      self._value_watchers[
+        self._value_watchers.length - 1
+      ].unwatchFn = self._vm.$watch(key, valueWatchFn.watchFn, { deep })
+
+      // Save the data to make it reacvtive
+      self._vm.$set(
+        self._syncData.data,
+        element.name,
+        _.get(self._vm, element.expression)
+      )
+
+      // Create Data Watch Fn
+      const dataWatchFn = new DataWatchFn(element, self)
+
+      element.expression = 'syncData.data.' + element.name
+      element.watchFn = dataWatchFn
+
+      // Save the watcher in the Object
+      self._data_watchers.push({ ...element })
+
+      self._data_watchers[
+        self._data_watchers.length - 1
+      ].unwatchFn = self._vm.$watch(
+        'syncData.data.' + element.name,
+        dataWatchFn.watchFn,
         { deep }
       )
     })
@@ -120,7 +145,7 @@ export default class VueSyncData {
       unwatchFn: null,
       expression: 'syncData.query',
       watchFn: watchFnQuery,
-      deep: false
+      deep: true
     }
     // Create Vue Watcher
     this._query_watcher.unwatchFn = this._vm.$watch(
@@ -132,63 +157,69 @@ export default class VueSyncData {
 
   _unsetWatchers() {
     // Unset Value Watchers
-    if (this._watchers && _.isArray(this._watchers)) {
-      this._watchers.forEach(watcher => {
+    if (this._value_watchers && _.isArray(this._value_watchers)) {
+      this._value_watchers.forEach(watcher => {
         watcher.unwatchFn()
       })
     }
 
-    this._watchers = []
+    // Unset Data Watchers
+    if (this._data_watchers && _.isArray(this._data_watchers)) {
+      this._data_watchers.forEach(watcher => {
+        watcher.unwatchFn()
+      })
+    }
 
-    // TODO
+    this._value_watchers = []
+    this._data_watchers = []
+
     // Unset Route Watcher
-    // this._route_watcher.unwatchFn()
-    // delete this._route_watcher
+    if (this._route_watcher && this._route_watcher.unwatchFn)
+      this._route_watcher.unwatchFn()
+
+    delete this._route_watcher
 
     // Unset Query Watcher
-    // this._query_watcher.unwatchFn()
-    // delete this._query_watcher
+    if (this._query_watcher && this._query_watcher.unwatchFn)
+      this._query_watcher.unwatchFn()
+
+    delete this._query_watcher
   }
 
   _setValueToQuery = function(newValue, object, objectString = null) {
-    // Change Value
     let value = newValue
-    switch (object.type.name) {
-      case 'Number':
-        if (value === 0) value = null
-        break
-      case 'String':
-        if (value === '') value = null
-        break
-      case 'Array':
-        if (!_.isArray(value) || _.isEmpty(value)) value = null
-        break
-      case 'Object':
-        if (!_.isObject(value) || _.isEmpty(value)) value = null
-        break
-    }
 
+    // Change Value if toNull
     if (
-      value === undefined ||
-      value === null ||
-      (_.isEmpty(value) && (_.isObject(value) || _.isArray(value))) // For Objects and Arrays
+      (object.toNull !== undefined || object.toNull !== null) &&
+      value == object.toNull
     )
+      value = null
+
+    // Delete Value if it is Null
+    if (value === undefined || value === null)
       this._vm.$delete(
-        this._syncValue.query,
+        this._syncData.query,
         (objectString ? objectString + '-' : '') + object.name,
         value
       )
     else {
+      // Call this function recursivly if an Object
       if (object.type.name === 'Object') {
         for (let key in value) {
           // skip loop if the property is from prototype
           if (!value.hasOwnProperty(key)) continue
 
-          this._setValueToQuery(value[key], object.proto[key], object.name)
+          this._setValueToQuery(
+            value[key],
+            object.proto[key],
+            (objectString ? objectString + '-' : '') + object.name
+          )
         }
       } else {
+        // Otherwise set the Value
         this._vm.$set(
-          this._syncValue.query,
+          this._syncData.query,
           (objectString ? objectString + '-' : '') + object.name,
           value
         )
@@ -199,28 +230,60 @@ export default class VueSyncData {
   _readValueFromQuery = function(watcher, objectString = null) {
     if (watcher.type.name === 'Object') {
       let object = {}
+      // if (!watcher.nullable)
+      //   object = VueSyncData._nullObjectFromProto(watcher.proto)
+
       for (let key in watcher.proto) {
         // skip loop if the property is from prototype
         if (!watcher.proto.hasOwnProperty(key)) continue
         object[key] = this._readValueFromQuery(watcher.proto[key], watcher.name)
       }
+
+      if (_.isEmpty(object)) object = null
+
       return object
     } else {
       let value = this._vm.$route.query[
         (objectString ? objectString + '-' : '') + watcher.name
       ]
 
-      switch (watcher.type.name) {
-        case 'Array':
-          value = value === undefined || _.isArray(value) ? value : [value]
-          break
-        case 'Number':
-          value = value !== undefined ? parseFloat(value) : undefined
-          break
-        case 'Boolean':
-          value = _.isBoolean(value) ? value : value === 'true' ? true : false
-          break
-      }
+      console.log('DEBUG') // eslint-disable-line no-console
+
+      // Change Value if toNull
+      if (
+        (watcher.toNull !== undefined || watcher.toNull !== null) &&
+        value === '' &&
+        watcher.nullable === false
+      )
+        value = watcher.toNull
+      else
+        switch (watcher.type.name) {
+          case 'Array':
+            if (!watcher.nullable) value = []
+            else if (value === undefined || value === null || _.isEmpty(value))
+              value = null
+            else value = _.isArray(value) ? value : [value]
+            break
+          case 'Number':
+            if (!watcher.nullable) value = 0
+            else if (value === undefined || value === null) value = null
+            else value = parseFloat(value)
+            break
+          case 'Boolean':
+            if (!watcher.nullable) value = false
+            else if (value === undefined || value === null) value = null
+            else
+              value = _.isBoolean(value)
+                ? value
+                : value === 'true'
+                  ? true
+                  : false
+            break
+          case 'String':
+            if (!watcher.nullable) value = ''
+            else if (value === undefined || value === null) value = null
+            break
+        }
 
       return value
     }
@@ -243,36 +306,36 @@ export default class VueSyncData {
 
     let value = {}
 
-    if (query && _.isObject(query) && !_.isEmpty(query)) {
-      for (let key in this._watchers) {
-        // skip loop if the property is from prototype
-        if (!this._watchers.hasOwnProperty(key)) continue
+    // if (query && _.isObject(query) && !_.isEmpty(query)) {
+    for (let key in this._value_watchers) {
+      // skip loop if the property is from prototype
+      if (!this._value_watchers.hasOwnProperty(key)) continue
 
-        value[this._watchers[key].name] = this._readValueFromQuery(
-          this._watchers[key]
-        )
-      }
+      value[this._value_watchers[key].name] = this._readValueFromQuery(
+        this._value_watchers[key]
+      )
+    }
 
-      this._lockSetter = query
+    this._lockSetter = query
 
-      for (let key in value) {
-        // skip loop if the property is from prototype
-        if (!value.hasOwnProperty(key)) continue
+    for (let key in value) {
+      // skip loop if the property is from prototype
+      if (!value.hasOwnProperty(key)) continue
 
-        if (value[key] !== undefined) {
-          // Get the watcher by name & set the value to the component
-          let watcher = this._watchers.filter(el => el.name === key)
-          _.set(this._vm, watcher[0].expression, value[key])
-        }
+      if (value[key] !== undefined) {
+        // Get the watcher by name & set the value to the component
+        let watcher = this._value_watchers.filter(el => el.name === key)
+        _.set(this._vm, watcher[0].expression, value[key])
       }
     }
+    // }
   }
 
   // Set the query
   setQuery = function() {
     if (!this._vm.$router) return
 
-    const query = this._syncValue.query
+    const query = this._syncData.query
 
     if (this._lockSetter && _.isEqual(this._lockSetter, query)) {
       this._lockSetter = undefined
@@ -284,6 +347,6 @@ export default class VueSyncData {
     // Save the query
     this._lockReader = { ...query }
 
-    this._vm.$router.push({ query: query })
+    this._vm.$router.push({ query: { ...query } })
   }
 }
