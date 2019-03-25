@@ -209,12 +209,26 @@ export default class VueSyncData {
         for (let key in value) {
           // skip loop if the property is from prototype
           if (!value.hasOwnProperty(key)) continue
+          // skip if value is not in prototype
+          let element = this._data_watchers
 
-          this._setValueToQuery(
-            value[key],
-            object.proto[key],
-            (objectString ? objectString + '-' : '') + object.name
+          if (objectString) {
+            let names = objectString.split('-')
+            names.forEach(name => {
+              element = element.proto.filter(watcher => watcher.name === name)
+            })
+          }
+
+          element = this._data_watchers.filter(
+            watcher => watcher.name === object.name
           )
+          // If in Prototype, then set the value to the query
+          if (element && element.length > 0)
+            this._setValueToQuery(
+              value[key],
+              object.proto[key],
+              (objectString ? objectString + '-' : '') + object.name
+            )
         }
       } else {
         // Otherwise set the Value
@@ -246,8 +260,6 @@ export default class VueSyncData {
       let value = this._vm.$route.query[
         (objectString ? objectString + '-' : '') + watcher.name
       ]
-
-      console.log('DEBUG') // eslint-disable-line no-console
 
       // Change Value if toNull
       if (
