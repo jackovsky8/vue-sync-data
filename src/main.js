@@ -186,55 +186,44 @@ export default class VueSyncData {
     delete this._query_watcher
   }
 
-  _setValueToQuery = function(newValue, object, objectString = null) {
-    let value = newValue
+  _setValueToQuery = function(newValue, watcher, objectString = null) {
+    let value = JSON.parse(JSON.stringify(newValue))
 
-    // Change Value if toNull
-    if (
-      (object.toNull !== undefined || object.toNull !== null) &&
-      value == object.toNull
-    )
-      value = null
+    // If to Null === null || undefined then this function is not used
+    if (watcher.toNull !== undefined || watcher.toNull !== null)
+      if (watcher.type.name === 'Array' || watcher.type.name === 'Object')
+        // If Array Or Object == is not working
+        value = _.isEqual(watcher.toNull, value) ? null : value
+      // Otherwise == is Perfect
+      else value = value == watcher.toNull ? null : value
 
     // Delete Value if it is Null
     if (value === undefined || value === null)
       this._vm.$delete(
         this._syncData.query,
-        (objectString ? objectString + '-' : '') + object.name,
+        (objectString ? objectString + '-' : '') + watcher.name,
         value
       )
     else {
       // Call this function recursivly if an Object
-      if (object.type.name === 'Object') {
-        for (let key in value) {
+      if (watcher.type.name === 'Object') {
+        for (let key in watcher.proto) {
           // skip loop if the property is from prototype
           if (!value.hasOwnProperty(key)) continue
-          // skip if value is not in prototype
-          let element = this._data_watchers
 
-          if (objectString) {
-            let names = objectString.split('-')
-            names.forEach(name => {
-              element = element.proto.filter(watcher => watcher.name === name)
-            })
-          }
+          let value_watcher = watcher.proto[key]
 
-          element = this._data_watchers.filter(
-            watcher => watcher.name === object.name
+          this._setValueToQuery(
+            value[key],
+            value_watcher,
+            (objectString ? objectString + '-' : '') + watcher.name
           )
-          // If in Prototype, then set the value to the query
-          if (element && element.length > 0)
-            this._setValueToQuery(
-              value[key],
-              object.proto[key],
-              (objectString ? objectString + '-' : '') + object.name
-            )
         }
       } else {
         // Otherwise set the Value
         this._vm.$set(
           this._syncData.query,
-          (objectString ? objectString + '-' : '') + object.name,
+          (objectString ? objectString + '-' : '') + watcher.name,
           value
         )
       }

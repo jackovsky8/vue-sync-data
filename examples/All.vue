@@ -134,12 +134,12 @@ export default {
         }
     },
     watch: {
-        object: {
-            handler() {
-                console.log('OBJECT CHANGED')
-            },
-            deep: true
-        }
+        // object: {
+        //     handler() {
+        //         console.log('OBJECT CHANGED')
+        //     },
+        //     deep: true
+        // }
     },
     mounted() {
         console.log(this.$route.query)

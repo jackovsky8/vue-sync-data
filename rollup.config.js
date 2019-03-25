@@ -52,7 +52,8 @@ export default [
       'lodash/isString',
       'lodash/isEqual',
       'lodash/throttle',
-      'lodash/get'
+      'lodash/get',
+      'lodash/clone'
     ],
     output: [
       {
