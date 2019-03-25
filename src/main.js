@@ -232,28 +232,44 @@ export default class VueSyncData {
 
   _readValueFromQuery = function(watcher, objectString = null) {
     if (watcher.type.name === 'Object') {
-      let object = {}
-      // if (!watcher.nullable)
-      //   object = VueSyncData._nullObjectFromProto(watcher.proto)
+      let value = {}
 
+      // Read the Values from the Proto
       for (let key in watcher.proto) {
         // skip loop if the property is from prototype
         if (!watcher.proto.hasOwnProperty(key)) continue
-        object[key] = this._readValueFromQuery(watcher.proto[key], watcher.name)
+        value[key] = this._readValueFromQuery(watcher.proto[key], watcher.name)
       }
 
-      if (_.isEmpty(object)) object = null
+      if (_.isEmpty(value)) value = null
 
-      return object
+      // Validate Object
+      if (!this._validateValue(watcher, value)) value = null
+
+      // Handle Null Values if not allowed by proto
+      if (!watcher.nullable && value === null)
+        if (watcher.toNull !== null || watcher.toNull !== undefined)
+          // If some specific Value is to null, set this one
+          value = watcher.toNull
+        // If Object is not nullable, and no toNull is given, create the Proto Object
+        else value = VueSyncData._nullObjectFromProto(watcher.proto)
+
+      return value
     } else {
       let value = this._vm.$route.query[
         (objectString ? objectString + '-' : '') + watcher.name
       ]
 
-      // Change Value if toNull
+      // Set to null if ''
+      value = value === '' ? null : value
+
+      // Validate Value
+      if (!this._validateValue(watcher, value)) value = null
+
+      // Handle Values
       if (
         (watcher.toNull !== undefined || watcher.toNull !== null) &&
-        value === '' &&
+        value === null &&
         watcher.nullable === false
       )
         value = watcher.toNull
@@ -288,6 +304,12 @@ export default class VueSyncData {
 
       return value
     }
+  }
+
+  _validateValue(watcher, value) {
+    console.log(watcher) //eslint-disable-line
+    console.log(value) // eslint-disable-line
+    return true
   }
 
   readQuery = function() {
