@@ -79,12 +79,12 @@ proto:
 - Object of watchers
 ```
 
-## developing
+## Developing
 ```javascript
+npm run dev // Build the Package, watch for changes and start a dev Server on localhost:8080 with running examples
 npm run test // Run Tests
-npm run build // Build the Package
-npm run dev // Build the Package and watch for changes
 npm run lint // Lint the Package
+npm run build // Build the Package
 ```
 
 ## Contributing? 
@@ -93,7 +93,3 @@ Please format your code before creating a pull-request.
 ## Security
 
 If you discover any security related issues, please email [Graf Jakob](mailto:jackovsky8@gmail.com).
-
-## Credits
-
-- [Graf Jakob](https://github.com/jackovsky888) - [Buy me a coffee](buymeacoff.ee/lIEn2A4D9)
