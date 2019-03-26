@@ -1,32 +1,24 @@
 {
+    "root": true,
     "env": {
       "browser": true,
+      "node": true,
       "es6": true
     },
     "globals": {
       "ENV": true
     },
-    "extends": "eslint:recommended",
+    "extends": [
+      "eslint:recommended",
+      "plugin:vue/recommended",
+      "plugin:prettier/recommended"
+    ],
+    "plugins": [
+      "vue",
+      "prettier"
+    ],
     "parserOptions": {
-      "sourceType": "module"
-    },
-    "rules": {
-      "indent": [
-        "error",
-        2,
-        { "SwitchCase": 1 }
-      ],
-      "linebreak-style": [
-        "error",
-        "unix"
-      ],
-      "quotes": [
-        "error",
-        "single"
-      ],
-      "semi": [
-        "error",
-        "never"
-      ]
+      "sourceType": "module",
+      "parser": "babel-eslint"
     }
   }

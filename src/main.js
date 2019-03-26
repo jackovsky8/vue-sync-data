@@ -293,8 +293,8 @@ export default class VueSyncData {
               value = _.isBoolean(value)
                 ? value
                 : value === 'true'
-                  ? true
-                  : false
+                ? true
+                : false
             break
           case 'String':
             if (!watcher.nullable) value = ''
