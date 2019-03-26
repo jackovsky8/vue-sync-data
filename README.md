@@ -1,3 +1,9 @@
+![GitHub](https://img.shields.io/github/license/jackovsky8/vue-sync-data.svg)
+![npm](https://img.shields.io/npm/v/vue-sync-data.svg)
+![npm bundle size](https://img.shields.io/bundlephobia/min/vue-sync-data.svg)
+![npm](https://img.shields.io/npm/dw/vue-sync-data.svg)
+![Beerpay](https://img.shields.io/beerpay/jackovsky8/vue-sync-data.svg)
+
 # vue-sync-data
 ### Auto Sync Vue Data to Query String
 
