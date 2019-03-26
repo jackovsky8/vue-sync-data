@@ -1,7 +1,7 @@
 # vue-sync-data
 ### Auto Sync Vue Data to Query String
 
-## install
+## Install
 
 ```javascript
 npm install --save vue-sync-data
