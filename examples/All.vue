@@ -5,12 +5,18 @@
     <div>
         <edit-number v-model="number" />
         <div class="row">
+            <button type="button" @click="number=null">To Null</button>
+        </div>
+        <div class="row">
             <vue-json-pretty :data="number" />
         </div>
     </div>
     <h5>BOOLEAN:</h5>
     <div>
         <edit-boolean v-model="boolean" />
+        <div class="row">
+            <button type="button" @click="boolean=null">To Null</button>
+        </div>
         <div class="row">
             <vue-json-pretty :data="boolean" />
         </div>
@@ -19,16 +25,25 @@
     <div>
         <edit-string v-model="string" />
         <div class="row">
+            <button type="button" @click="string=null">To Null</button>
+        </div>
+        <div class="row">
             <vue-json-pretty :data="string" />
         </div>
     </div>
     <h5>ARRAY:</h5>
         <edit-array v-model="array"/>
         <div class="row">
+            <button type="button" @click="array=null">To Null</button>
+        </div>
+        <div class="row">
             <vue-json-pretty :data="array" />
         </div>
     <h5>OBJECT:</h5>
         <edit-object v-model="object"/>
+        <div class="row">
+            <button type="button" @click="object=null">To Null</button>
+        </div>
         <div class="row">
             <vue-json-pretty :data="object" />
         </div>
@@ -132,18 +147,6 @@ export default {
                 }
             }
         }
-    },
-    watch: {
-        // object: {
-        //     handler() {
-        //         console.log('OBJECT CHANGED')
-        //     },
-        //     deep: true
-        // }
-    },
-    mounted() {
-        console.log(this.$route.query)
-        console.log(this.$syncData)
     }
 }
 </script>

@@ -186,6 +186,24 @@ export default class VueSyncData {
     delete this._query_watcher
   }
 
+  _deleteValueFromQuery = function(watcher, objectString) {
+    if (watcher.type.name === 'Object')
+      for (let key in watcher.proto) {
+        // skip loop if the property is from prototype
+        if (!watcher.proto.hasOwnProperty(key)) continue
+
+        this._deleteValueFromQuery(
+          watcher.proto[key],
+          (objectString ? objectString + '-' : '') + watcher.name
+        )
+      }
+    else
+      this._vm.$delete(
+        this._syncData.query,
+        (objectString ? objectString + '-' : '') + watcher.name
+      )
+  }
+
   _setValueToQuery = function(newValue, watcher, objectString = null) {
     let value = JSON.parse(JSON.stringify(newValue))
 
@@ -198,13 +216,9 @@ export default class VueSyncData {
       else value = value == watcher.toNull ? null : value
 
     // Delete Value if it is Null
-    if (value === undefined || value === null)
-      this._vm.$delete(
-        this._syncData.query,
-        (objectString ? objectString + '-' : '') + watcher.name,
-        value
-      )
-    else {
+    if (value === undefined || value === null) {
+      this._deleteValueFromQuery(watcher, objectString)
+    } else {
       // Call this function recursivly if an Object
       if (watcher.type.name === 'Object') {
         for (let key in watcher.proto) {

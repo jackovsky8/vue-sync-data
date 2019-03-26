@@ -37,8 +37,6 @@
 //   // Change state and wait for one tick until checking
 //   vm.$router.push({ query: { string: 'NEW' } })
 
-//   console.log(vm.$syncData) //eslint-disable-line
-
 //   await Vue.nextTick()
 //   await Vue.nextTick()
 //   await Vue.nextTick()

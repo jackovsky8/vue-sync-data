@@ -3,9 +3,7 @@ const VueRouter = require('vue-router')
 import { shallowMount, createLocalVue } from '@vue/test-utils'
 
 const localVue = createLocalVue()
-console.log(VueSyncData.install) //eslint-disable-line
 localVue.use(VueSyncData)
-// localVue.use(VueRouter)
 
 const component = {
   data() {
@@ -42,10 +40,5 @@ const wrapper = shallowMount(component, {
 
 //eslint-disable-next-line no-undef
 test('object', async () => {
-  console.log(wrapper.vm.string) // eslint-disable-line
   wrapper.setData({ string: 'new Text' })
-  console.log(wrapper.vm.string) // eslint-disable-line
-  console.log(wrapper.vm.$route.query.string) // eslint-disable-line
-
-  // console.log(wrapper.vm.$el.innerHTML) // eslint-disable-line
 })
