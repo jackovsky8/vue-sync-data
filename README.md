@@ -93,3 +93,7 @@ Please format your code before creating a pull-request.
 ## Security
 
 If you discover any security related issues, please email [Graf Jakob](mailto:jackovsky8@gmail.com).
+## Support on Beerpay
+Hey dude! Help me out for a couple of :beers:!
+
+[![Beerpay](https://beerpay.io/jackovsky8/vue-sync-data/badge.svg?style=beer-square)](https://beerpay.io/jackovsky8/vue-sync-data)  [![Beerpay](https://beerpay.io/jackovsky8/vue-sync-data/make-wish.svg?style=flat-square)](https://beerpay.io/jackovsky8/vue-sync-data?focus=wish)
