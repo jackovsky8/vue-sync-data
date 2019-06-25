@@ -1,6 +1,6 @@
 {
   "name": "vue-sync-data",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Auto Sync Vue Data to Query String",
   "main": "dist/vue-sync-data.cjs.js",
   "module": "dist/vue-sync-data.esm.js",
