@@ -190,7 +190,7 @@ export default class VueSyncData {
     if (watcher.type.name === 'Object')
       for (let key in watcher.proto) {
         // skip loop if the property is from prototype
-        if (!watcher.proto.hasOwnProperty(key)) continue
+        if (!Object.prototype.hasOwnProperty.call(watcher, key)) continue
 
         this._deleteValueFromQuery(
           watcher.proto[key],
@@ -223,7 +223,7 @@ export default class VueSyncData {
       if (watcher.type.name === 'Object') {
         for (let key in watcher.proto) {
           // skip loop if the property is from prototype
-          if (!value.hasOwnProperty(key)) continue
+          if (!Object.prototype.hasOwnProperty.call(value, key)) continue
 
           let value_watcher = watcher.proto[key]
 
@@ -251,7 +251,7 @@ export default class VueSyncData {
       // Read the Values from the Proto
       for (let key in watcher.proto) {
         // skip loop if the property is from prototype
-        if (!watcher.proto.hasOwnProperty(key)) continue
+        if (!Object.prototype.hasOwnProperty.call(watcher, key)) continue
         value[key] = this._readValueFromQuery(watcher.proto[key], watcher.name)
       }
 
@@ -348,7 +348,8 @@ export default class VueSyncData {
     // if (query && _.isObject(query) && !_.isEmpty(query)) {
     for (let key in this._value_watchers) {
       // skip loop if the property is from prototype
-      if (!this._value_watchers.hasOwnProperty(key)) continue
+      if (!Object.prototype.hasOwnProperty.call(this._value_watchers, key))
+        continue
 
       value[this._value_watchers[key].name] = this._readValueFromQuery(
         this._value_watchers[key]
@@ -359,7 +360,7 @@ export default class VueSyncData {
 
     for (let key in value) {
       // skip loop if the property is from prototype
-      if (!value.hasOwnProperty(key)) continue
+      if (!Object.prototype.hasOwnProperty.call(value, key)) continue
 
       if (value[key] !== undefined) {
         // Get the watcher by name & set the value to the component

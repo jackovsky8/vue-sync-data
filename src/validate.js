@@ -8,7 +8,7 @@ export function getValidSyncObjects(objects) {
 
   for (let key in objects) {
     // skip loop if the property is from prototype
-    if (!objects.hasOwnProperty(key)) continue
+    if (!Object.prototype.hasOwnProperty.call(objects, key)) continue
 
     let object = VueSyncData._validateSyncObject(objects[key], key)
 
@@ -115,7 +115,7 @@ export function validateSyncObject(element, key) {
       let proto = {}
       for (let k in element.proto) {
         // skip loop if the property is from prototype
-        if (!element.proto.hasOwnProperty(k)) continue
+        if (!Object.prototype.hasOwnProperty.call(element.proto, k)) continue
 
         // Validate the key of the Object
         let el = VueSyncData._validateSyncObject(

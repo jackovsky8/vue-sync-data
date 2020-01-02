@@ -35,7 +35,7 @@ export function nullObjectFromProto(proto) {
 
   for (let key in proto) {
     // skip loop if the property is from prototype
-    if (!proto.hasOwnProperty(key)) continue
+    if (Object.prototype.hasOwnProperty.call(proto, key)) continue
 
     switch (proto[key].type.name) {
       case 'Boolean':
